@@ -82,9 +82,20 @@
   #dialogName { font-size: 24px; font-weight: bold; }
   #dialogSub { font-size: 13px; opacity: 0.9; }
   #closeBtn {
-    margin-left: auto; font-family: inherit; font-size: 18px; font-weight: bold;
+    font-family: inherit; font-size: 18px; font-weight: bold;
     background: #e05d5d; color: #fff; border: 3px solid #fff; border-radius: 999px;
     padding: 6px 16px; cursor: pointer;
+  }
+  #voiceBtn {
+    margin-left: auto; margin-right: 10px; font-family: inherit; font-size: 20px;
+    background: #2f9e44; border: 3px solid #fff; border-radius: 999px;
+    width: 46px; height: 46px; cursor: pointer; flex-shrink: 0;
+  }
+  #voiceBtn.muted { background: #8d99ae; }
+  #dialogEmoji.speaking { animation: talkPulse 0.45s ease-in-out infinite alternate; }
+  @keyframes talkPulse {
+    from { transform: scale(1); }
+    to { transform: scale(1.18); box-shadow: 0 0 0 6px rgba(246, 183, 60, 0.45); }
   }
   #dialogAnswer {
     padding: 16px 20px; font-size: 17px; line-height: 1.6; color: #333;
@@ -158,6 +169,7 @@
         <div id="dialogName"></div>
         <div id="dialogSub"></div>
       </div>
+      <button id="voiceBtn" title="Turn character voices on or off">&#128266;</button>
       <button id="closeBtn">Bye! &#10005;</button>
     </div>
     <div id="dialogAnswer"></div>
@@ -188,6 +200,7 @@ import * as THREE from 'three';
 const CHARACTERS = {
   adam: {
     name: 'Adam', emoji: '\u{1F33F}', sub: 'The very first man',
+    voice: { gender: 'male', idx: 0, pitch: 0.85, rate: 0.95 },
     greeting: "Hello, friend! Welcome to the Garden of Eden — the very first home God ever made for people. I was the first man God created! What would you like to ask me?",
     questions: [
       { q: 'When did you live?', a: "I lived at the very beginning of history! God made me on the sixth day of creation. He formed me from the dust of the ground and breathed the breath of life into me — and I became a living person. I was the very first human being who ever lived!", v: 'Genesis 1:26–31; Genesis 2:7' },
@@ -201,6 +214,7 @@ const CHARACTERS = {
   },
   eve: {
     name: 'Eve', emoji: '\u{1F338}', sub: 'The mother of all living',
+    voice: { gender: 'female', idx: 0, pitch: 1.12, rate: 0.98 },
     greeting: "Hello, little one! I'm Eve, the very first woman God ever made. Adam named me Eve because I became the mother of everyone who has ever lived. What do you want to know?",
     questions: [
       { q: 'How were you made?', a: "God made me in a very special way! He caused Adam to fall into a deep sleep, took one of his ribs, and made me from it. When Adam woke up and saw me, he was so happy — he said I was 'bone of my bones and flesh of my flesh.' God made us to be a family, the first family ever!", v: 'Genesis 2:21–23' },
@@ -213,6 +227,7 @@ const CHARACTERS = {
   },
   noah: {
     name: 'Noah', emoji: '\u{1F6A2}', sub: 'Builder of the Ark',
+    voice: { gender: 'male', idx: 1, pitch: 0.7, rate: 0.88 },
     greeting: "Ahoy there, young sailor! I'm Noah. God asked me to build a giant boat — the Ark — to save my family and the animals from a great flood. Climb aboard with your questions!",
     questions: [
       { q: 'When did you live?', a: "I lived many generations after Adam — the Bible lists my whole family line from Adam in Genesis chapter 5! I was 600 years old when the floodwaters came, and I lived to be 950 years old. People lived a very long time back then!", v: 'Genesis 5; Genesis 7:6; Genesis 9:29' },
@@ -226,6 +241,7 @@ const CHARACTERS = {
   },
   moses: {
     name: 'Moses', emoji: '\u{1F30A}', sub: 'Leader of the Exodus',
+    voice: { gender: 'male', idx: 2, pitch: 0.78, rate: 0.92 },
     greeting: "Greetings, young traveler! I'm Moses. God used me to lead His people Israel out of slavery in Egypt — right through the middle of the Red Sea! What would you like to ask?",
     questions: [
       { q: 'When did you live?', a: "I lived about 3,500 years ago! Based on the Bible's own timeline in 1 Kings 6:1, many Bible scholars believe I led Israel out of Egypt around 1446 BC. I lived 120 years: 40 years as a prince in Egypt, 40 years as a shepherd in Midian, and 40 years leading Israel through the wilderness!", v: '1 Kings 6:1; Deuteronomy 34:7; Acts 7:23, 30, 36' },
@@ -239,6 +255,7 @@ const CHARACTERS = {
   },
   david: {
     name: 'David', emoji: '\u{1FA83}', sub: 'Shepherd, giant-slayer, king',
+    voice: { gender: 'male', idx: 3, pitch: 1.2, rate: 1.06 },
     greeting: "Hi there, brave friend! I'm David. I was a shepherd boy from Bethlehem who fought the giant Goliath — and later became king of Israel! See that big fellow across the valley? Ask me about him!",
     questions: [
       { q: 'When did you live?', a: "I lived about 3,000 years ago! I became king around 1010 BC and reigned for 40 years. And here's something amazing: archaeologists digging in Israel found an ancient stone called the Tel Dan Stele that mentions the 'House of David' — my royal family — carved in stone from long, long ago!", v: '2 Samuel 5:4–5' },
@@ -252,6 +269,7 @@ const CHARACTERS = {
   },
   elijah: {
     name: 'Elijah', emoji: '\u{1F525}', sub: 'Prophet of fire',
+    voice: { gender: 'male', idx: 4, pitch: 0.9, rate: 1.02 },
     greeting: "Welcome to Mount Carmel, young friend! I'm Elijah the prophet. Right here on this mountain, God answered my prayer with FIRE from heaven! What would you like to know?",
     questions: [
       { q: 'When did you live?', a: "I lived about 2,900 years ago, around 870–850 BC, in the days when wicked King Ahab and Queen Jezebel ruled the northern kingdom of Israel. They led the people to worship a fake god named Baal, so God sent me to call everyone back to Him.", v: '1 Kings 16:29–33; 1 Kings 17:1' },
@@ -265,6 +283,7 @@ const CHARACTERS = {
   },
   daniel: {
     name: 'Daniel', emoji: '\u{1F981}', sub: 'Faithful in the lions’ den',
+    voice: { gender: 'male', idx: 5, pitch: 0.98, rate: 0.96 },
     greeting: "Hello there, brave explorer! I'm Daniel. I spent a whole night in a den of hungry lions — and God shut their mouths! Don't worry, these lions are friendly now. What would you like to ask?",
     questions: [
       { q: 'When did you live?', a: "I lived about 2,600 years ago. Around 605 BC, when I was just a young man, King Nebuchadnezzar of Babylon captured Jerusalem and took me far from home. I served in the palace of Babylon for over 60 years, under several kings — and I stayed faithful to God the whole time!", v: 'Daniel 1:1–6, 21' },
@@ -277,6 +296,7 @@ const CHARACTERS = {
   },
   samuel: {
     name: 'Samuel', emoji: '\u{1F4EF}', sub: 'The boy who heard God',
+    voice: { gender: 'male', idx: 6, pitch: 1.35, rate: 1.05 },
     greeting: "Hello, young friend! I'm Samuel. When I was a boy about your age, God called my name in the night — and I became His prophet! I even anointed David as king. What would you like to ask me?",
     questions: [
       { q: 'When did you live?', a: "I lived a little over 3,000 years ago, in the days before Israel had kings. I was Israel's last judge and one of its first great prophets — God used me to anoint Israel's first two kings, Saul and David!", v: '1 Samuel 7:15; Acts 13:20' },
@@ -764,6 +784,79 @@ if (isTouch) {
 }
 
 /* ================================================================
+   CHARACTER VOICES (built-in browser text-to-speech, free & offline)
+   ================================================================ */
+const synth = window.speechSynthesis;
+let voicesEnabled = localStorage.getItem('bw_voices') !== 'off';
+const voicePools = { male: [], female: [] };
+
+const NOVELTY = /albert|bad news|bahh|bells|boing|bubbles|cellos|deranged|good news|jester|organ|superstar|trinoids|whisper|wobble|zarvox|hysterical|junior|kathy/i;
+const PREFERRED = {
+  male: ['daniel', 'alex', 'aaron', 'arthur', 'gordon', 'rishi', 'reed', 'eddy', 'rocko', 'grandpa', 'fred', 'ralph', 'google uk english male', 'microsoft david', 'microsoft mark', 'microsoft guy', 'google us english'],
+  female: ['samantha', 'karen', 'moira', 'tessa', 'victoria', 'kate', 'susan', 'allison', 'ava', 'serena', 'flo', 'sandy', 'shelley', 'grandma', 'nicky', 'google uk english female', 'microsoft zira', 'microsoft aria', 'microsoft jenny'],
+};
+const FEMALE_HINT = /samantha|karen|moira|tessa|victoria|kate|susan|allison|ava|serena|flo|sandy|shelley|grandma|nicky|zira|aria|jenny|fiona|female|woman/i;
+
+function loadVoices() {
+  if (!synth) return;
+  const all = synth.getVoices().filter(v => v.lang && v.lang.toLowerCase().startsWith('en') && !NOVELTY.test(v.name));
+  const pick = names => {
+    const out = [];
+    for (const n of names) {
+      const v = all.find(v => v.name.toLowerCase().includes(n) && !out.includes(v));
+      if (v) out.push(v);
+    }
+    return out;
+  };
+  voicePools.male = pick(PREFERRED.male);
+  voicePools.female = pick(PREFERRED.female);
+  if (!voicePools.male.length) voicePools.male = all.filter(v => !FEMALE_HINT.test(v.name));
+  if (!voicePools.female.length) voicePools.female = all.filter(v => FEMALE_HINT.test(v.name));
+  if (!voicePools.male.length) voicePools.male = all;
+  if (!voicePools.female.length) voicePools.female = all;
+}
+if (synth) { loadVoices(); synth.onvoiceschanged = loadVoices; }
+
+function speak(text, profile) {
+  if (!synth || !voicesEnabled || !profile) return;
+  synth.cancel();
+  // split into sentences so long answers never get cut off mid-speech
+  const parts = text.match(/[^.!?]+[.!?'"’”]*/g) || [text];
+  const pool = voicePools[profile.gender] || [];
+  const voice = pool.length ? pool[profile.idx % pool.length] : null;
+  const emojiEl = document.getElementById('dialogEmoji');
+  let remaining = parts.length;
+  const done = () => { if (--remaining <= 0) emojiEl.classList.remove('speaking'); };
+  parts.forEach(part => {
+    const u = new SpeechSynthesisUtterance(part.trim());
+    if (voice) u.voice = voice;
+    u.pitch = profile.pitch;
+    u.rate = profile.rate;
+    u.onstart = () => emojiEl.classList.add('speaking');
+    u.onend = done;
+    u.onerror = done;
+    synth.speak(u);
+  });
+}
+function stopSpeaking() {
+  if (synth) synth.cancel();
+  document.getElementById('dialogEmoji').classList.remove('speaking');
+}
+
+const voiceBtn = document.getElementById('voiceBtn');
+function refreshVoiceBtn() {
+  voiceBtn.textContent = voicesEnabled ? '\u{1F50A}' : '\u{1F507}';
+  voiceBtn.classList.toggle('muted', !voicesEnabled);
+}
+refreshVoiceBtn();
+voiceBtn.addEventListener('click', () => {
+  voicesEnabled = !voicesEnabled;
+  localStorage.setItem('bw_voices', voicesEnabled ? 'on' : 'off');
+  if (!voicesEnabled) stopSpeaking();
+  refreshVoiceBtn();
+});
+
+/* ================================================================
    DIALOGUE UI
    ================================================================ */
 const dialogEl = document.getElementById('dialog');
@@ -808,8 +901,10 @@ function showAnswer(text, verse) {
     el.appendChild(v);
   }
   el.scrollTop = 0;
+  if (currentNPC) speak(text, currentNPC.data.voice);
 }
 function closeDialog() {
+  stopSpeaking();
   dialogOpen = false;
   currentNPC = null;
   dialogEl.style.display = 'none';
