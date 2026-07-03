@@ -146,7 +146,7 @@
   <div class="sub">Walk through the greatest stories of the Old Testament!</div>
   <div class="card">
     <b>How to play:</b><br>
-    Use the <b>arrow keys</b> (or <b>W A S D</b>) to walk around.<br>
+    Press <b>&#11014;</b> to walk, and <b>&#11013; &#10145;</b> to turn and look around.<br>
     Visit the <b>Garden of Eden</b>, <b>Noah's Ark</b>, the <b>Red Sea</b>,
     the <b>Valley of Elah</b>, <b>Mount Carmel</b>, and the <b>Lions' Den</b>!<br>
     Walk up to a Bible hero and press <b>E</b> to talk with them and ask questions!
@@ -186,7 +186,7 @@
   </div>
 </div>
 <button id="talkBtn">&#128172;</button>
-<div id="keysHelp">Arrow keys / WASD to walk &bull; E to talk</div>
+<div id="keysHelp">&#11014; walk &bull; &#11013; &#10145; turn &bull; E talk</div>
 
 <script src="characters.js"></script>
 <script type="importmap">
@@ -222,7 +222,14 @@ sun.shadow.camera.top = 140; sun.shadow.camera.bottom = -140;
 scene.add(sun);
 
 /* ---------- helpers ---------- */
-const mat = (color, opts = {}) => new THREE.MeshLambertMaterial({ color, ...opts });
+// cel-shading gradient gives everything a cartoon look
+const toonGradient = (() => {
+  const tex = new THREE.DataTexture(new Uint8Array([90, 150, 210, 255]), 4, 1, THREE.RedFormat);
+  tex.minFilter = tex.magFilter = THREE.NearestFilter;
+  tex.needsUpdate = true;
+  return tex;
+})();
+const mat = (color, opts = {}) => new THREE.MeshToonMaterial({ color, gradientMap: toonGradient, ...opts });
 
 function textSprite(text, { size = 42, color = '#1c4587', bg = true, scale = 10 } = {}) {
   const c = document.createElement('canvas');
@@ -247,34 +254,82 @@ function textSprite(text, { size = 42, color = '#1c4587', bg = true, scale = 10 
 
 function makePerson({ robe = 0x3366cc, skin = 0xe8b88a, hair = 0x4a2f1b, beard = false, headcloth = null, scale = 1 } = {}) {
   const g = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.85, 2.1, 12), mat(robe));
-  body.position.y = 1.05; body.castShadow = true; g.add(body);
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.52, 16, 12), mat(skin));
-  head.position.y = 2.55; head.castShadow = true; g.add(head);
+  const limbs = {};
+  const skinMat = mat(skin);
+  const robeMat = mat(robe);
+  const beltColor = new THREE.Color(robe).multiplyScalar(0.55);
+
+  // legs with hip pivots, so they can swing while walking (plus sandals)
+  const legGeo = new THREE.CylinderGeometry(0.17, 0.13, 1.0, 10);
+  [['legL', -0.27], ['legR', 0.27]].forEach(([key, x]) => {
+    const hip = new THREE.Group();
+    hip.position.set(x, 1.05, 0);
+    const leg = new THREE.Mesh(legGeo, skinMat);
+    leg.position.y = -0.5; leg.castShadow = true;
+    hip.add(leg);
+    const foot = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.14, 0.52), mat(0x6d4c2f));
+    foot.position.set(0, -1.0, 0.12);
+    hip.add(foot);
+    g.add(hip);
+    limbs[key] = hip;
+  });
+
+  // tunic with belt, chest and shoulders
+  const tunic = new THREE.Mesh(new THREE.CylinderGeometry(0.48, 0.8, 1.35, 14), robeMat);
+  tunic.position.y = 1.6; tunic.castShadow = true; g.add(tunic);
+  const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.71, 0.74, 0.18, 14), mat(beltColor));
+  belt.position.y = 1.22; g.add(belt);
+  const chest = new THREE.Mesh(new THREE.SphereGeometry(0.52, 14, 10), robeMat);
+  chest.position.y = 2.18; chest.scale.set(1.05, 0.72, 0.9); chest.castShadow = true; g.add(chest);
+
+  // arms with shoulder pivots and hands
+  const armGeo = new THREE.CylinderGeometry(0.13, 0.11, 0.85, 10);
+  [['armL', -0.58, -0.16], ['armR', 0.58, 0.16]].forEach(([key, x, tilt]) => {
+    const shoulder = new THREE.Group();
+    shoulder.position.set(x, 2.28, 0);
+    shoulder.rotation.z = tilt;
+    const sleeve = new THREE.Mesh(armGeo, robeMat);
+    sleeve.position.y = -0.42; sleeve.castShadow = true;
+    shoulder.add(sleeve);
+    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 8), skinMat);
+    hand.position.y = -0.9;
+    shoulder.add(hand);
+    g.add(shoulder);
+    limbs[key] = shoulder;
+  });
+
+  // big cartoon head with expressive face
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.58, 18, 14), skinMat);
+  head.position.y = 2.98; head.castShadow = true; g.add(head);
+  [-0.2, 0.2].forEach(x => {
+    const white = new THREE.Mesh(new THREE.SphereGeometry(0.13, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+    white.position.set(x, 3.05, 0.47); white.scale.z = 0.55; g.add(white);
+    const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 6), new THREE.MeshBasicMaterial({ color: 0x1d1d1d }));
+    pupil.position.set(x, 3.05, 0.55); g.add(pupil);
+    const brow = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.05, 0.06), mat(hair));
+    brow.position.set(x, 3.24, 0.5); brow.rotation.z = x < 0 ? 0.12 : -0.12; g.add(brow);
+  });
+  const nose = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 6), skinMat);
+  nose.position.set(0, 2.94, 0.57); g.add(nose);
+  const smile = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.042, 8, 14, Math.PI), mat(0x9c4a3a));
+  smile.position.set(0, 2.82, 0.5); smile.rotation.z = Math.PI; smile.rotation.x = -0.15;
+  g.add(smile);
+
   if (headcloth !== null) {
-    const cloth = new THREE.Mesh(new THREE.SphereGeometry(0.58, 16, 8, 0, Math.PI * 2, 0, Math.PI * 0.55), mat(headcloth));
-    cloth.position.y = 2.62; g.add(cloth);
-    const back = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.62, 0.9, 12), mat(headcloth));
-    back.position.set(0, 2.25, -0.18); g.add(back);
+    const cloth = new THREE.Mesh(new THREE.SphereGeometry(0.65, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.55), mat(headcloth));
+    cloth.position.y = 3.05; g.add(cloth);
+    const drape = new THREE.Mesh(new THREE.CylinderGeometry(0.56, 0.72, 1.0, 12, 1, true), mat(headcloth));
+    drape.position.set(0, 2.78, -0.16); g.add(drape);
   } else {
-    const hairM = new THREE.Mesh(new THREE.SphereGeometry(0.55, 16, 8, 0, Math.PI * 2, 0, Math.PI * 0.5), mat(hair));
-    hairM.position.y = 2.6; g.add(hairM);
+    const hairM = new THREE.Mesh(new THREE.SphereGeometry(0.62, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.52), mat(hair));
+    hairM.position.y = 3.03; g.add(hairM);
   }
   if (beard) {
-    const b = new THREE.Mesh(new THREE.ConeGeometry(0.34, 0.75, 10), mat(hair));
-    b.position.set(0, 2.2, 0.3); b.rotation.x = Math.PI; g.add(b);
+    const b = new THREE.Mesh(new THREE.ConeGeometry(0.36, 0.75, 12), mat(hair));
+    b.position.set(0, 2.55, 0.32); b.rotation.x = Math.PI; g.add(b);
   }
-  const armGeo = new THREE.CylinderGeometry(0.14, 0.14, 1.2, 8);
-  const armL = new THREE.Mesh(armGeo, mat(robe));
-  armL.position.set(-0.68, 1.55, 0); armL.rotation.z = 0.35; g.add(armL);
-  const armR = armL.clone(); armR.position.x = 0.68; armR.rotation.z = -0.35; g.add(armR);
-  const eyeGeo = new THREE.SphereGeometry(0.06, 8, 8);
-  const eyeMat = mat(0x222222);
-  const eL = new THREE.Mesh(eyeGeo, eyeMat); eL.position.set(-0.18, 2.62, 0.46); g.add(eL);
-  const eR = eL.clone(); eR.position.x = 0.18; g.add(eR);
-  const smile = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.035, 8, 12, Math.PI), mat(0x883333));
-  smile.position.set(0, 2.42, 0.47); smile.rotation.x = Math.PI; smile.rotation.z = Math.PI;
-  g.add(smile);
+
+  g.userData.limbs = limbs;
   g.scale.setScalar(scale);
   return g;
 }
@@ -283,8 +338,16 @@ function makeTree(trunkH = 3, canopyR = 2.2, canopyColor = 0x2f9e44) {
   const g = new THREE.Group();
   const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.5, trunkH, 8), mat(0x7a5230));
   trunk.position.y = trunkH / 2; trunk.castShadow = true; g.add(trunk);
-  const canopy = new THREE.Mesh(new THREE.SphereGeometry(canopyR, 12, 10), mat(canopyColor));
-  canopy.position.y = trunkH + canopyR * 0.6; canopy.castShadow = true; g.add(canopy);
+  // three overlapping blobs make a fluffy cartoon canopy
+  const canopyMat = mat(canopyColor);
+  const lightMat = mat(new THREE.Color(canopyColor).multiplyScalar(1.18));
+  [[0, trunkH + canopyR * 0.6, 0, canopyR, canopyMat],
+   [canopyR * 0.62, trunkH + canopyR * 0.32, canopyR * 0.3, canopyR * 0.68, lightMat],
+   [-canopyR * 0.58, trunkH + canopyR * 0.4, -canopyR * 0.28, canopyR * 0.64, canopyMat]]
+    .forEach(([x, y, z, r, m]) => {
+      const blob = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 10), m);
+      blob.position.set(x, y, z); blob.castShadow = true; g.add(blob);
+    });
   return g;
 }
 
@@ -371,8 +434,29 @@ const fBase = new THREE.Mesh(new THREE.CylinderGeometry(3, 3.4, 0.8, 20), mat(0x
 fBase.position.y = 0.4; scene.add(fBase);
 const fWater = new THREE.Mesh(new THREE.CylinderGeometry(2.6, 2.6, 0.5, 20), mat(0x4fc3f7));
 fWater.position.y = 0.75; scene.add(fWater);
-const welcome = textSprite('★ Bible Adventure World ★', { size: 56, scale: 5 });
-welcome.position.set(0, 9, 0); scene.add(welcome);
+const welcome = textSprite('★ Bible Adventure World ★', { size: 56, scale: 2.6 });
+welcome.position.set(0, 12, 0); scene.add(welcome);
+
+/* sun and drifting clouds */
+const sunBall = new THREE.Mesh(new THREE.SphereGeometry(7, 16, 12),
+  new THREE.MeshBasicMaterial({ color: 0xfff1a8 }));
+sunBall.position.set(90, 85, -110);
+scene.add(sunBall);
+const clouds = [];
+const cloudMat = new THREE.MeshToonMaterial({ color: 0xffffff, gradientMap: toonGradient });
+for (let i = 0; i < 9; i++) {
+  const c = new THREE.Group();
+  const n = 3 + Math.floor(Math.random() * 2);
+  for (let j = 0; j < n; j++) {
+    const puff = new THREE.Mesh(new THREE.SphereGeometry(2 + Math.random() * 1.8, 10, 8), cloudMat);
+    puff.position.set(j * 2.8 - n * 1.4 + Math.random(), Math.random() * 0.9, Math.random() * 1.6);
+    c.add(puff);
+  }
+  const entry = { g: c, a: Math.random() * Math.PI * 2, r: 45 + Math.random() * 90, y: 26 + Math.random() * 16, sp: 0.008 + Math.random() * 0.012 };
+  c.position.set(Math.cos(entry.a) * entry.r, entry.y, Math.sin(entry.a) * entry.r);
+  scene.add(c);
+  clouds.push(entry);
+}
 
 /* scattered trees around the outer ring */
 for (let i = 0; i < 26; i++) {
@@ -518,7 +602,7 @@ const flames = [];
   spear.position.set(p.x - 5.9, 4.5, p.z - 10);
   scene.add(spear);
   const gLabel = textSprite('Goliath (9 feet tall!)', { size: 40, scale: 3, color: '#8a2020' });
-  gLabel.position.set(p.x - 8, 9.5, p.z - 10);
+  gLabel.position.set(p.x - 8, 11, p.z - 10);
   scene.add(gLabel);
   const sheep = makeAnimal(0xf5f0e6, 0.6);
   sheep.position.set(p.x + 9, 0, p.z + 9); sheep.rotation.y = 3;
@@ -601,9 +685,9 @@ function addNPC(key, opts, x, z, faceAngle = 0) {
   scene.add(person);
   const data = CHARACTERS[key];
   const label = textSprite('\u{1F4AC} ' + data.name, { size: 46, scale: 2.4 });
-  label.position.set(x, opts.scale ? 3.6 * opts.scale + 1 : 4.4, z);
+  label.position.set(x, (opts.scale || 1) * 4.1 + 0.9, z);
   scene.add(label);
-  bobbers.push({ obj: person, base: 0, amp: 0.12, speed: 2 + Math.random() });
+  bobbers.push({ obj: person, base: 0, amp: 0.04, speed: 2 + Math.random() });
   npcs.push({ key, data, x, z, mesh: person });
 }
 
@@ -634,8 +718,8 @@ addNPC('samuel', { robe: 0xf1c40f, skin: 0xe8b88a, hair: 0x4a2f1b, scale: 0.8 },
    PLAYER
    ================================================================ */
 const player = makePerson({ robe: 0xf03e3e, skin: 0xe8b88a, hair: 0x3b2a1a, scale: 0.75 });
-const cap = new THREE.Mesh(new THREE.SphereGeometry(0.56, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.5), mat(0x1971c2));
-cap.position.y = 2.62;
+const cap = new THREE.Mesh(new THREE.SphereGeometry(0.63, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.5), mat(0x1971c2));
+cap.position.y = 3.04;
 player.children.forEach(() => {});
 player.add(cap);
 player.position.set(0, 0, 16);
@@ -643,7 +727,11 @@ scene.add(player);
 
 const keys = { up: false, down: false, left: false, right: false };
 const SPEED = 13;
+const TURN_SPEED = 2.7;
+let heading = Math.PI;
+let walkPhase = 0;
 let dialogOpen = false;
+camera.position.set(0, 9.5, 29);
 
 const keymap = {
   ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down',
@@ -843,27 +931,43 @@ function animate() {
   const dt = Math.min(clock.getDelta(), 0.05);
   const t = clock.elapsedTime;
 
+  // turn with left/right, walk with up/down
+  let moveDir = 0;
   if (!dialogOpen) {
-    const dir = new THREE.Vector3(
-      (keys.right ? 1 : 0) - (keys.left ? 1 : 0), 0,
-      (keys.down ? 1 : 0) - (keys.up ? 1 : 0)
-    );
-    if (dir.lengthSq() > 0) {
-      dir.normalize();
-      player.position.addScaledVector(dir, SPEED * dt);
-      player.rotation.y = Math.atan2(dir.x, dir.z);
+    if (keys.left) heading += TURN_SPEED * dt;
+    if (keys.right) heading -= TURN_SPEED * dt;
+    if (keys.up) moveDir = 1;
+    else if (keys.down) moveDir = -0.55;
+    if (moveDir !== 0) {
+      const forward = new THREE.Vector3(Math.sin(heading), 0, Math.cos(heading));
+      player.position.addScaledVector(forward, SPEED * moveDir * dt);
       const distFromCenter = Math.hypot(player.position.x, player.position.z);
       if (distFromCenter > 138) player.position.multiplyScalar(138 / distFromCenter);
-      player.position.y = Math.abs(Math.sin(t * 12)) * 0.18;
-    } else {
-      player.position.y = 0;
     }
+    player.rotation.y = heading;
   }
 
-  // camera follow
-  const camTarget = new THREE.Vector3(player.position.x, 0, player.position.z);
-  camera.position.lerp(new THREE.Vector3(camTarget.x, 13, camTarget.z + 17), 0.08);
-  camera.lookAt(camTarget.x, 2.5, camTarget.z);
+  // walking animation: legs and arms swing, with a small bounce
+  const limbs = player.userData.limbs;
+  if (moveDir !== 0) {
+    walkPhase += dt * 9.5;
+    const swing = Math.sin(walkPhase);
+    limbs.legL.rotation.x = swing * 0.8;
+    limbs.legR.rotation.x = -swing * 0.8;
+    limbs.armL.rotation.x = -swing * 0.6;
+    limbs.armR.rotation.x = swing * 0.6;
+    player.position.y = Math.abs(Math.cos(walkPhase)) * 0.09;
+  } else {
+    for (const k of ['legL', 'legR', 'armL', 'armR']) limbs[k].rotation.x *= 0.82;
+    player.position.y = 0;
+  }
+
+  // camera follows behind the player's shoulder
+  const face = new THREE.Vector3(Math.sin(heading), 0, Math.cos(heading));
+  const camGoal = player.position.clone().addScaledVector(face, -13);
+  camGoal.y = 9.5;
+  camera.position.lerp(camGoal, 0.08);
+  camera.lookAt(player.position.x + face.x * 5, 2.8, player.position.z + face.z * 5);
 
   // proximity check
   nearNPC = null;
@@ -883,6 +987,18 @@ function animate() {
 
   // idle bobbing
   for (const b of bobbers) b.obj.position.y = b.base + Math.sin(t * b.speed) * b.amp;
+  // NPCs gently sway their arms
+  for (const n of npcs) {
+    const l = n.mesh.userData.limbs;
+    const sway = Math.sin(t * 1.6 + n.x) * 0.08;
+    l.armL.rotation.x = sway;
+    l.armR.rotation.x = -sway;
+  }
+  // clouds drift slowly around the world
+  for (const cl of clouds) {
+    cl.a += cl.sp * dt;
+    cl.g.position.set(Math.cos(cl.a) * cl.r, cl.y, Math.sin(cl.a) * cl.r);
+  }
   // flames flicker
   for (const f of flames) {
     f.scale.y = 1 + Math.sin(t * 9 + f.position.x * 3) * 0.25;
