@@ -146,7 +146,7 @@
   <div class="sub">Walk through the greatest stories of the Old Testament!</div>
   <div class="card">
     <b>How to play:</b><br>
-    Press <b>&#11014;</b> to walk, and <b>&#11013; &#10145;</b> to turn and look around.<br>
+    Press <b>&#11014;</b> to walk, and <b>&#11013; &#10145;</b> to turn. Drag the screen to look all around &mdash; even up at the sky!<br>
     Visit the <b>Garden of Eden</b>, <b>Noah's Ark</b>, the <b>Red Sea</b>,
     the <b>Valley of Elah</b>, <b>Mount Carmel</b>, and the <b>Lions' Den</b>!<br>
     Walk up to a Bible hero and press <b>E</b> to talk with them and ask questions!
@@ -186,7 +186,7 @@
   </div>
 </div>
 <button id="talkBtn">&#128172;</button>
-<div id="keysHelp">&#11014; walk &bull; &#11013; &#10145; turn &bull; E talk</div>
+<div id="keysHelp">&#11014; walk &bull; &#11013; &#10145; turn &bull; drag to look around &bull; E talk</div>
 
 <script src="characters.js"></script>
 <script type="importmap">
@@ -205,10 +205,11 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87ceeb);
-scene.fog = new THREE.Fog(0x87ceeb, 90, 240);
+scene.fog = new THREE.Fog(0xcfeeff, 100, 320);
 
 const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 500);
 
@@ -224,7 +225,7 @@ scene.add(sun);
 /* ---------- helpers ---------- */
 // cel-shading gradient gives everything a cartoon look
 const toonGradient = (() => {
-  const tex = new THREE.DataTexture(new Uint8Array([90, 150, 210, 255]), 4, 1, THREE.RedFormat);
+  const tex = new THREE.DataTexture(new Uint8Array([70, 110, 150, 190, 225, 255]), 6, 1, THREE.RedFormat);
   tex.minFilter = tex.magFilter = THREE.NearestFilter;
   tex.needsUpdate = true;
   return tex;
@@ -437,11 +438,30 @@ fWater.position.y = 0.75; scene.add(fWater);
 const welcome = textSprite('★ Bible Adventure World ★', { size: 56, scale: 2.6 });
 welcome.position.set(0, 12, 0); scene.add(welcome);
 
-/* sun and drifting clouds */
+/* gradient sky dome, sun and drifting clouds */
+const skyCanvas = document.createElement('canvas');
+skyCanvas.width = 1; skyCanvas.height = 256;
+const sg = skyCanvas.getContext('2d');
+const skyGrad = sg.createLinearGradient(0, 0, 0, 256);
+skyGrad.addColorStop(0, '#3f97e6');
+skyGrad.addColorStop(0.45, '#8fd0f4');
+skyGrad.addColorStop(0.55, '#cfeeff');
+skyGrad.addColorStop(1, '#cfeeff');
+sg.fillStyle = skyGrad; sg.fillRect(0, 0, 1, 256);
+const sky = new THREE.Mesh(
+  new THREE.SphereGeometry(380, 24, 16),
+  new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(skyCanvas), side: THREE.BackSide, fog: false })
+);
+scene.add(sky);
+
 const sunBall = new THREE.Mesh(new THREE.SphereGeometry(7, 16, 12),
-  new THREE.MeshBasicMaterial({ color: 0xfff1a8 }));
+  new THREE.MeshBasicMaterial({ color: 0xfff1a8, fog: false }));
 sunBall.position.set(90, 85, -110);
 scene.add(sunBall);
+const sunGlow = new THREE.Mesh(new THREE.SphereGeometry(10.5, 16, 12),
+  new THREE.MeshBasicMaterial({ color: 0xfff7d1, transparent: true, opacity: 0.35, fog: false }));
+sunGlow.position.copy(sunBall.position);
+scene.add(sunGlow);
 const clouds = [];
 const cloudMat = new THREE.MeshToonMaterial({ color: 0xffffff, gradientMap: toonGradient });
 for (let i = 0; i < 9; i++) {
@@ -466,6 +486,57 @@ for (let i = 0; i < 26; i++) {
     [0x2f9e44, 0x37b24d, 0x2b8a3e][i % 3]);
   t.position.set(Math.cos(a) * r, 0, Math.sin(a) * r);
   scene.add(t);
+}
+
+/* wildflowers scattered across the meadow (instanced = one draw call per color) */
+{
+  const flowerColors = [0xff5d8f, 0xffd93d, 0xff8c42, 0xb197fc, 0xffffff];
+  const perColor = 34;
+  const stemGeo = new THREE.CylinderGeometry(0.04, 0.06, 0.55, 5);
+  const petalGeo = new THREE.IcosahedronGeometry(0.24, 0);
+  const stems = new THREE.InstancedMesh(stemGeo, mat(0x3f9142), flowerColors.length * perColor);
+  const dummy = new THREE.Object3D();
+  flowerColors.forEach((c, ci) => {
+    const petals = new THREE.InstancedMesh(petalGeo, mat(c), perColor);
+    for (let i = 0; i < perColor; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const r = 16 + Math.random() * 126;
+      const x = Math.cos(a) * r, z = Math.sin(a) * r;
+      const s = 0.8 + Math.random() * 0.7;
+      dummy.position.set(x, 0.27 * s, z);
+      dummy.scale.setScalar(s);
+      dummy.updateMatrix();
+      stems.setMatrixAt(ci * perColor + i, dummy.matrix);
+      dummy.position.y = 0.62 * s;
+      dummy.updateMatrix();
+      petals.setMatrixAt(i, dummy.matrix);
+    }
+    scene.add(petals);
+  });
+  scene.add(stems);
+}
+
+/* little birds circling the sky */
+const birds = [];
+for (let i = 0; i < 4; i++) {
+  const g = new THREE.Group();
+  const bodyMat = mat(i % 2 ? 0x4a7fd4 : 0xf5f5f5);
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.32, 8, 6), bodyMat);
+  body.scale.set(1.5, 1, 1); g.add(body);
+  const beak = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.26, 6), mat(0xffb347));
+  beak.rotation.z = -Math.PI / 2; beak.position.x = 0.55; g.add(beak);
+  const wingGeo = new THREE.BoxGeometry(0.5, 0.05, 0.9);
+  const wings = [1, -1].map(side => {
+    const pivot = new THREE.Group();
+    pivot.position.set(0, 0.1, side * 0.2);
+    const w = new THREE.Mesh(wingGeo, bodyMat);
+    w.position.z = side * 0.45;
+    pivot.add(w); g.add(pivot);
+    return pivot;
+  });
+  const entry = { g, wings, a: Math.random() * Math.PI * 2, r: 30 + Math.random() * 55, y: 13 + Math.random() * 10, sp: 0.12 + Math.random() * 0.14, off: Math.random() * 9 };
+  scene.add(g);
+  birds.push(entry);
 }
 
 /* ================================================================
@@ -729,9 +800,23 @@ const keys = { up: false, down: false, left: false, right: false };
 const SPEED = 13;
 const TURN_SPEED = 2.7;
 let heading = Math.PI;
+let pitch = 0;
 let walkPhase = 0;
 let dialogOpen = false;
 camera.position.set(0, 9.5, 29);
+
+/* drag anywhere on the world to look around (mouse or finger) */
+canvas.style.touchAction = 'none';
+let dragging = false, lastX = 0, lastY = 0;
+canvas.addEventListener('pointerdown', e => { dragging = true; lastX = e.clientX; lastY = e.clientY; });
+window.addEventListener('pointermove', e => {
+  if (!dragging || dialogOpen) return;
+  heading -= (e.clientX - lastX) * 0.005;
+  pitch = Math.max(-0.55, Math.min(1.15, pitch + (lastY - e.clientY) * 0.005));
+  lastX = e.clientX; lastY = e.clientY;
+});
+window.addEventListener('pointerup', () => { dragging = false; });
+window.addEventListener('pointercancel', () => { dragging = false; });
 
 const keymap = {
   ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down',
@@ -909,6 +994,7 @@ promptEl.addEventListener('click', () => { if (nearNPC && !dialogOpen) openDialo
 
 // exposed for testing
 window.__openDialog = key => { const n = npcs.find(n => n.key === key); if (n) openDialog(n); };
+window.__debug = () => ({ player: player.position.toArray().map(v => +v.toFixed(1)), heading: +heading.toFixed(2), pitch: +pitch.toFixed(2), keys: { ...keys }, dialogOpen, near: nearNPC && nearNPC.key });
 
 /* ================================================================
    START + LOOP
@@ -962,12 +1048,12 @@ function animate() {
     player.position.y = 0;
   }
 
-  // camera follows behind the player's shoulder
+  // camera follows behind the player's shoulder; pitch tilts the view up/down
   const face = new THREE.Vector3(Math.sin(heading), 0, Math.cos(heading));
   const camGoal = player.position.clone().addScaledVector(face, -13);
-  camGoal.y = 9.5;
+  camGoal.y = Math.max(1.7, 9.5 - pitch * 7.5);
   camera.position.lerp(camGoal, 0.08);
-  camera.lookAt(player.position.x + face.x * 5, 2.8, player.position.z + face.z * 5);
+  camera.lookAt(player.position.x + face.x * 5, 2.8 + Math.sin(pitch) * 26, player.position.z + face.z * 5);
 
   // proximity check
   nearNPC = null;
@@ -998,6 +1084,15 @@ function animate() {
   for (const cl of clouds) {
     cl.a += cl.sp * dt;
     cl.g.position.set(Math.cos(cl.a) * cl.r, cl.y, Math.sin(cl.a) * cl.r);
+  }
+  // birds circle overhead, flapping their wings
+  for (const bd of birds) {
+    bd.a += bd.sp * dt;
+    bd.g.position.set(Math.cos(bd.a) * bd.r, bd.y + Math.sin(t * 1.3 + bd.off) * 1.2, Math.sin(bd.a) * bd.r);
+    bd.g.rotation.y = -bd.a - Math.PI / 2;
+    const flap = Math.sin(t * 9 + bd.off) * 0.7;
+    bd.wings[0].rotation.x = flap;
+    bd.wings[1].rotation.x = -flap;
   }
   // flames flicker
   for (const f of flames) {
