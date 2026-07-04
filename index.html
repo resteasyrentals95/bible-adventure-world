@@ -117,6 +117,31 @@
   #dialogQuestions button:hover { background: #eaf3ff; }
   #dialogQuestions button.asked { border-color: #9db9dd; color: #7a93b5; }
   @media (max-width: 520px) { #dialogQuestions { grid-template-columns: 1fr; } }
+  #dialogQuestions button.actBtn {
+    grid-column: 1 / -1; background: #ffe9a8; border-color: #d99a1b; color: #7a4d00;
+    font-size: 15px; text-align: center;
+  }
+  #dialogQuestions button.actBtn:hover { background: #ffdf85; }
+
+  /* ---------- Scene player ---------- */
+  #sceneUI { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: none; pointer-events: none; }
+  #sceneCaption {
+    max-width: 640px; margin: 0 auto 74px; padding: 14px 22px; font-size: 18px; line-height: 1.5;
+    color: #fff; background: rgba(20, 30, 55, 0.82); border: 3px solid #ffd35c; border-radius: 18px;
+    text-align: center; text-shadow: 0 2px 3px rgba(0,0,0,0.5);
+  }
+  #sceneTitle {
+    position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 30;
+    padding: 8px 22px; font-size: 20px; font-weight: bold; color: #7a4d00;
+    background: #ffe9a8; border: 3px solid #d99a1b; border-radius: 16px; display: none;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+  }
+  #sceneSkip {
+    position: fixed; bottom: 18px; right: 18px; z-index: 31; display: none;
+    font-family: inherit; font-size: 15px; font-weight: bold; color: #1c4587;
+    background: rgba(255,255,255,0.9); border: 3px solid #2a62b8; border-radius: 14px;
+    padding: 9px 16px; cursor: pointer;
+  }
 
   /* ---------- Touch controls ---------- */
   #touchPad { position: fixed; bottom: 16px; left: 16px; z-index: 20; display: none; }
@@ -149,7 +174,8 @@
     Press <b>&#11014;</b> to walk, and <b>&#11013; &#10145;</b> to turn. Drag the screen to look all around &mdash; even up at the sky!<br>
     Visit the <b>Garden of Eden</b>, <b>Noah's Ark</b>, the <b>Red Sea</b>,
     the <b>Valley of Elah</b>, <b>Mount Carmel</b>, and the <b>Lions' Den</b>!<br>
-    Walk up to a Bible hero and press <b>E</b> to talk with them and ask questions!
+    Walk up to a Bible hero and press <b>E</b> to talk with them and ask questions &mdash;
+    and tap <b>&#127916; Act it out</b> to watch their story come to life!
   </div>
   <button id="startBtn">&#9654; Start Exploring!</button>
   <div class="parents">
@@ -158,7 +184,7 @@
   </div>
 </div>
 
-<div id="hud">&#128506;&#65039; Explore the world and find all 8 Bible heroes!</div>
+<div id="hud">&#128506;&#65039; Explore the world and find all 9 Bible heroes!</div>
 <div id="prompt"></div>
 
 <div id="dialog">
@@ -186,6 +212,9 @@
   </div>
 </div>
 <button id="talkBtn">&#128172;</button>
+<div id="sceneTitle"></div>
+<div id="sceneUI"><div id="sceneCaption"></div></div>
+<button id="sceneSkip">Skip &#9197;</button>
 <div id="keysHelp">&#11014; walk &bull; &#11013; &#10145; turn &bull; drag to look around &bull; E talk</div>
 
 <script src="characters.js"></script>
@@ -544,6 +573,7 @@ for (let i = 0; i < 4; i++) {
    ================================================================ */
 const bobbers = [];   // gentle idle animation
 const flames = [];
+const props = {};     // named set pieces the acted-out scenes can animate
 
 /* ---------- Garden of Eden ---------- */
 {
@@ -570,6 +600,7 @@ const flames = [];
   }
   tol.position.set(p.x, 0, p.z - 8);
   scene.add(tol);
+  props.tol = tol;
   // flowers
   for (let i = 0; i < 30; i++) {
     const f = new THREE.Mesh(new THREE.SphereGeometry(0.22, 6, 6),
@@ -580,6 +611,7 @@ const flames = [];
   // friendly animals
   const lamb = makeAnimal(0xf5f0e6, 0.7); lamb.position.set(p.x - 6, 0, p.z + 7); lamb.rotation.y = 0.8; scene.add(lamb);
   const deer = makeAnimal(0xb08050, 0.9); deer.position.set(p.x + 7, 0, p.z + 8); deer.rotation.y = -2.2; scene.add(deer);
+  props.lamb = lamb; props.deer = deer;
 }
 
 /* ---------- Noah's Ark ---------- */
@@ -603,7 +635,9 @@ const flames = [];
   ark.position.set(p.x + 3, 0, p.z - 6);
   ark.rotation.y = 0.4;
   scene.add(ark);
+  props.ark = ark;
   // rainbow
+  props.rainbow = [];
   const rbColors = [0xff4d4d, 0xffa94d, 0xffe066, 0x69db7c, 0x4dabf7, 0x9775fa];
   rbColors.forEach((c, i) => {
     const arc = new THREE.Mesh(new THREE.TorusGeometry(20 - i * 1.1, 0.55, 8, 40, Math.PI),
@@ -611,8 +645,10 @@ const flames = [];
     arc.position.set(p.x + 3, 2, p.z - 14);
     arc.rotation.y = 0.35;
     scene.add(arc);
+    props.rainbow.push(arc);
   });
   // animal pairs waiting to board
+  props.arkAnimals = [];
   const pairs = [[0xf5f0e6, 0.6], [0x9a7b4f, 0.9], [0xd4a017, 0.7], [0x777777, 1.1]];
   pairs.forEach(([c, s], i) => {
     for (let j = 0; j < 2; j++) {
@@ -620,6 +656,7 @@ const flames = [];
       an.position.set(p.x - 12 + i * 5, 0, p.z + 8 + j * 2.4);
       an.rotation.y = 2.6;
       scene.add(an);
+      props.arkAnimals.push(an);
     }
   });
 }
@@ -637,6 +674,7 @@ const flames = [];
   const foamMat = mat(0xdff3ff);
   const foamL = new THREE.Mesh(foamGeo, foamMat); foamL.position.set(p.x - 9.5, 13.1, p.z - 6); scene.add(foamL);
   const foamR = foamL.clone(); foamR.position.x = p.x + 9.5; scene.add(foamR);
+  props.wallL = wallL; props.wallR = wallR; props.foamL = foamL; props.foamR = foamR;
   const seabed = new THREE.Mesh(new THREE.PlaneGeometry(8, 34), mat(0xf0e3b8));
   seabed.rotation.x = -Math.PI / 2; seabed.position.set(p.x, 0.04, p.z - 6);
   scene.add(seabed);
@@ -664,17 +702,10 @@ const flames = [];
     stone.position.set(p.x + 1 + (Math.random() - 0.5) * 4, 0.15, p.z + (Math.random() - 0.5) * 16);
     scene.add(stone);
   }
-  // Goliath — big armored figure (not talkable, just impressive)
-  const goliath = makePerson({ robe: 0x555f66, skin: 0xd9a878, beard: true, headcloth: 0x3b4248, scale: 2.6 });
-  goliath.position.set(p.x - 8, 0, p.z - 10);
-  goliath.rotation.y = 1.2;
-  scene.add(goliath);
+  // Goliath's giant spear (Goliath himself is a talkable NPC, added below)
   const spear = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 9, 6), mat(0x6d4522));
   spear.position.set(p.x - 5.9, 4.5, p.z - 10);
   scene.add(spear);
-  const gLabel = textSprite('Goliath (9 feet tall!)', { size: 40, scale: 3, color: '#8a2020' });
-  gLabel.position.set(p.x - 8, 11, p.z - 10);
-  scene.add(gLabel);
   const sheep = makeAnimal(0xf5f0e6, 0.6);
   sheep.position.set(p.x + 9, 0, p.z + 9); sheep.rotation.y = 3;
   scene.add(sheep);
@@ -711,6 +742,7 @@ const flames = [];
   const trench = new THREE.Mesh(new THREE.TorusGeometry(3.4, 0.45, 8, 24), mat(0x4fc3f7));
   trench.position.set(p.x, 0.15, p.z + 2); trench.rotation.x = -Math.PI / 2;
   scene.add(trench);
+  props.trench = trench;
   // a raven with bread
   const raven = new THREE.Mesh(new THREE.SphereGeometry(0.45, 10, 8), mat(0x222222));
   raven.position.set(p.x + 8, 4.5, p.z + 6);
@@ -729,17 +761,21 @@ const flames = [];
   const stone = makeRock(2.6, 0xa39a88);
   stone.position.set(p.x + 6.5, 1.2, p.z - 1);
   scene.add(stone);
+  props.denStone = stone;
   // friendly lions
+  props.lions = [];
   [[-5, 4, 0.6], [4, 6, -0.9], [-1, 8, 2.4]].forEach(([dx, dz, ry]) => {
     const lion = makeAnimal(0xd4a017, 1.05, true);
     lion.position.set(p.x + dx, 0, p.z + dz); lion.rotation.y = ry;
     scene.add(lion);
+    props.lions.push(lion);
   });
   // angel (glowing figure near the den)
   const angel = makePerson({ robe: 0xfffbe6, skin: 0xf0d5b8, hair: 0xe8d28a, scale: 1.1 });
   angel.traverse(o => { if (o.material && o.material.color && o.material.color.getHex() === 0xfffbe6) o.material.emissive = new THREE.Color(0x555033); });
   angel.position.set(p.x - 3, 2.2, p.z - 6);
   scene.add(angel); bobbers.push({ obj: angel, base: 2.2, amp: 0.35, speed: 1.1 });
+  props.angel = angel;
   const aLabel = textSprite("God's angel!", { size: 38, scale: 2.6, color: '#8a6d00' });
   aLabel.position.set(p.x - 3, 7.6, p.z - 6);
   scene.add(aLabel);
@@ -759,7 +795,7 @@ function addNPC(key, opts, x, z, faceAngle = 0) {
   label.position.set(x, (opts.scale || 1) * 4.1 + 0.9, z);
   scene.add(label);
   bobbers.push({ obj: person, base: 0, amp: 0.04, speed: 2 + Math.random() });
-  npcs.push({ key, data, x, z, mesh: person });
+  npcs.push({ key, data, x, z, mesh: person, label });
 }
 
 addNPC('adam',   { robe: 0x2b8a3e, skin: 0xd9a878, beard: true },                 zonePos.eden.x - 2,   zonePos.eden.z + 4, 2.6);
@@ -767,6 +803,7 @@ addNPC('eve',    { robe: 0xe8590c, skin: 0xe8b88a, hair: 0x5c3a1e },            
 addNPC('noah',   { robe: 0x8a5a2b, skin: 0xd9a878, beard: true, headcloth: 0xd9cba8 }, zonePos.noah.x - 8, zonePos.noah.z + 4, 2.8);
 addNPC('moses',  { robe: 0x9c36b5, skin: 0xd9a878, beard: true, headcloth: 0xd0bfff }, zonePos.redsea.x, zonePos.redsea.z + 14, Math.PI);
 addNPC('david',  { robe: 0x1971c2, skin: 0xe8b88a, hair: 0x8a5a2b, scale: 0.85 }, zonePos.david.x + 5,  zonePos.david.z - 2, -1.4);
+addNPC('goliath', { robe: 0x555f66, skin: 0xd9a878, beard: true, headcloth: 0x3b4248, scale: 2.6 }, zonePos.david.x - 8, zonePos.david.z - 10, 1.2);
 addNPC('elijah', { robe: 0x862e2e, skin: 0xd9a878, beard: true, headcloth: 0xc9b79c }, zonePos.elijah.x - 5, zonePos.elijah.z + 6, 1.2);
 addNPC('daniel', { robe: 0x0b7285, skin: 0xd9a878, hair: 0x2e2018 },              zonePos.daniel.x + 1, zonePos.daniel.z + 6, 3.4);
 addNPC('samuel', { robe: 0xf1c40f, skin: 0xe8b88a, hair: 0x4a2f1b, scale: 0.8 },  4, 10, 2.6);
@@ -810,7 +847,7 @@ canvas.style.touchAction = 'none';
 let dragging = false, lastX = 0, lastY = 0;
 canvas.addEventListener('pointerdown', e => { dragging = true; lastX = e.clientX; lastY = e.clientY; });
 window.addEventListener('pointermove', e => {
-  if (!dragging || dialogOpen) return;
+  if (!dragging || dialogOpen || sceneActive) return;
   heading -= (e.clientX - lastX) * 0.005;
   pitch = Math.max(-0.55, Math.min(1.15, pitch + (lastY - e.clientY) * 0.005));
   lastX = e.clientX; lastY = e.clientY;
@@ -824,8 +861,9 @@ const keymap = {
 };
 window.addEventListener('keydown', e => {
   if (keymap[e.code]) { keys[keymap[e.code]] = true; e.preventDefault(); }
-  if (e.code === 'KeyE' && nearNPC && !dialogOpen) openDialog(nearNPC);
+  if (e.code === 'KeyE' && nearNPC && !dialogOpen && !sceneActive) openDialog(nearNPC);
   if (e.code === 'Escape' && dialogOpen) closeDialog();
+  if (e.code === 'Escape' && sceneActive) endScene();
 });
 window.addEventListener('keyup', e => { if (keymap[e.code]) keys[keymap[e.code]] = false; });
 
@@ -841,7 +879,7 @@ if (isTouch) {
   const talkBtn = document.getElementById('talkBtn');
   talkBtn.addEventListener('touchstart', e => {
     e.preventDefault();
-    if (nearNPC && !dialogOpen) openDialog(nearNPC);
+    if (nearNPC && !dialogOpen && !sceneActive) openDialog(nearNPC);
   }, { passive: false });
 }
 
@@ -955,6 +993,13 @@ function openDialog(npc) {
   showAnswer(d.greeting, null, 'g');
   const qWrap = document.getElementById('dialogQuestions');
   qWrap.innerHTML = '';
+  if (d.scene && SCENES[npc.key]) {
+    const act = document.createElement('button');
+    act.className = 'actBtn';
+    act.textContent = '\u{1F3AC} Act it out: ' + d.scene.title;
+    act.addEventListener('click', () => playScene(npc.key));
+    qWrap.appendChild(act);
+  }
   d.questions.forEach((item, idx) => {
     const b = document.createElement('button');
     b.textContent = '❓ ' + item.q;
@@ -990,11 +1035,349 @@ function closeDialog() {
   dialogEl.style.display = 'none';
 }
 document.getElementById('closeBtn').addEventListener('click', closeDialog);
-promptEl.addEventListener('click', () => { if (nearNPC && !dialogOpen) openDialog(nearNPC); });
+promptEl.addEventListener('click', () => { if (nearNPC && !dialogOpen && !sceneActive) openDialog(nearNPC); });
+
+/* ================================================================
+   ACTED-OUT SCENES — little theater plays inside the world
+   ================================================================ */
+const sceneTitleEl = document.getElementById('sceneTitle');
+const sceneUIEl = document.getElementById('sceneUI');
+const sceneCaptionEl = document.getElementById('sceneCaption');
+const sceneSkipEl = document.getElementById('sceneSkip');
+const npcMesh = key => npcs.find(n => n.key === key).mesh;
+const limbsOf = mesh => mesh.userData.limbs;
+const ease = k => k * k * (3 - 2 * k);
+const lerp = (a, b, k) => a + (b - a) * k;
+const sceneCamV = new THREE.Vector3();
+
+let sceneActive = false;
+let scenePlay = null;
+let sceneAudio = null;
+
+/* remembers position/rotation/scale/visibility so every scene tidies up after itself */
+function snapshot(objects) {
+  const snaps = objects.map(o => ({ o, p: o.position.clone(), r: o.rotation.clone(), s: o.scale.clone(), v: o.visible }));
+  return () => snaps.forEach(({ o, p, r, s, v }) => { o.position.copy(p); o.rotation.copy(r); o.scale.copy(s); o.visible = v; });
+}
+
+function sceneNarrate() {
+  const sp = scenePlay;
+  sceneCaptionEl.textContent = sp.lines[sp.idx] || '';
+  sp.audioDone = false;
+  if (!voicesEnabled) { sp.audioDone = true; return; }
+  const a = new Audio('audio/scene_' + sp.key + '_' + sp.idx + '.mp3');
+  sceneAudio = a;
+  a.onended = () => { sp.audioDone = true; };
+  a.onerror = () => { sp.audioDone = true; };
+  a.play().catch(() => { sp.audioDone = true; });
+}
+
+function stopSceneAudio() {
+  if (sceneAudio) { sceneAudio.onended = sceneAudio.onerror = null; sceneAudio.pause(); sceneAudio = null; }
+}
+
+function playScene(key) {
+  const def = SCENES[key];
+  if (!def || sceneActive) return;
+  closeDialog();
+  keys.up = keys.down = keys.left = keys.right = false;
+  const data = CHARACTERS[key];
+  sceneActive = true;
+  scenePlay = {
+    key, def,
+    lines: data.scene.lines,
+    idx: 0, stepT: 0, audioDone: true,
+    busy: new Set(def.busy || [key]),
+    frozen: new Set(def.freeze ? def.freeze() : []),
+    restore: snapshot(def.objs ? def.objs() : []),
+    tmp: def.setup ? def.setup() : {},
+  };
+  npcs.forEach(n => { n.label.visible = false; });
+  sceneTitleEl.textContent = '\u{1F3AC} ' + data.scene.title;
+  sceneTitleEl.style.display = 'block';
+  sceneUIEl.style.display = 'block';
+  sceneSkipEl.style.display = 'block';
+  promptEl.style.display = 'none';
+  sceneNarrate();
+}
+
+function endScene() {
+  if (!sceneActive) return;
+  stopSceneAudio();
+  const sp = scenePlay;
+  if (sp.def.teardown) sp.def.teardown(sp.tmp);
+  sp.restore();
+  npcs.forEach(n => { n.label.visible = true; });
+  sceneActive = false;
+  scenePlay = null;
+  sceneTitleEl.style.display = 'none';
+  sceneUIEl.style.display = 'none';
+  sceneSkipEl.style.display = 'none';
+}
+sceneSkipEl.addEventListener('click', endScene);
+
+function advanceScene() {
+  stopSceneAudio();
+  const sp = scenePlay;
+  sp.idx++;
+  sp.stepT = 0;
+  if (sp.idx >= sp.def.steps.length) { endScene(); return; }
+  sceneNarrate();
+}
+
+const ZE = zonePos.eden, ZN = zonePos.noah, ZR = zonePos.redsea,
+      ZD = zonePos.david, ZC = zonePos.elijah, ZA = zonePos.daniel;
+const SCENES = {};
+
+/* --- Adam: Naming the Animals --- */
+SCENES.adam = {
+  cam: { pos: [ZE.x, 8, ZE.z + 22], look: [ZE.x, 3, ZE.z + 2] },
+  objs: () => [props.lamb, props.deer, props.tol, npcMesh('adam')],
+  steps: [
+    { dur: 6, anim(k) { props.tol.scale.setScalar(1 + Math.sin(k * Math.PI * 2) * 0.05); } },
+    { dur: 6, anim(k) {
+        const l = limbsOf(npcMesh('adam'));
+        l.armL.rotation.x = -ease(k) * 2.5; l.armR.rotation.x = -ease(k) * 2.5;
+      } },
+    { dur: 7, anim(k) {
+        const e = ease(k);
+        props.lamb.position.set(lerp(ZE.x - 6, ZE.x - 3.6, e), Math.abs(Math.sin(k * Math.PI * 5)) * 0.5, lerp(ZE.z + 7, ZE.z + 5.2, e));
+        props.deer.position.set(lerp(ZE.x + 7, ZE.x + 0.6, e), Math.abs(Math.sin(k * Math.PI * 4)) * 0.4, lerp(ZE.z + 8, ZE.z + 5.8, e));
+        props.lamb.rotation.y = 2.2; props.deer.rotation.y = -1.9;
+        const l = limbsOf(npcMesh('adam'));
+        l.armL.rotation.x = -0.3; l.armR.rotation.x = -1.3;
+      } },
+  ],
+};
+
+/* --- Eve: The Sneaky Serpent --- */
+SCENES.eve = {
+  cam: { pos: [ZE.x + 10, 7, ZE.z + 8], look: [ZE.x, 4, ZE.z - 5] },
+  objs: () => [npcMesh('eve')],
+  setup() {
+    const serpent = new THREE.Group();
+    for (let i = 0; i < 6; i++) {
+      const seg = new THREE.Mesh(new THREE.SphereGeometry(0.34 - i * 0.035, 10, 8), mat(0x2f9e44));
+      seg.position.set(Math.sin(i * 1.2) * 0.4, 0, -i * 0.5);
+      serpent.add(seg);
+    }
+    serpent.position.set(ZE.x + 1.1, 7, ZE.z - 8);
+    scene.add(serpent);
+    return { serpent };
+  },
+  teardown(tmp) { scene.remove(tmp.serpent); },
+  steps: [
+    { dur: 6, anim(k, tmp) {
+        const a = k * Math.PI * 2;
+        tmp.serpent.position.set(ZE.x + Math.cos(a) * 1.1, 7 - ease(k) * 6.4, ZE.z - 8 + Math.sin(a) * 1.1);
+        tmp.serpent.rotation.y = -a;
+      } },
+    { dur: 6, anim(k, tmp) {
+        const e = ease(k);
+        tmp.serpent.rotation.y = 0;
+        tmp.serpent.position.set(lerp(ZE.x + 1.1, ZE.x + 1.8, e), 0.6, lerp(ZE.z - 8, ZE.z + 2.4, e));
+        limbsOf(npcMesh('eve')).armR.rotation.x = -e * 1.6;
+      } },
+    { dur: 6, anim(k, tmp) {
+        const e = ease(k);
+        tmp.serpent.scale.setScalar(Math.max(0.001, 1 - e));
+        const l = limbsOf(npcMesh('eve'));
+        l.armL.rotation.x = -e * 2.6; l.armR.rotation.x = -e * 2.6;
+      } },
+  ],
+};
+
+/* --- Noah: All Aboard the Ark! --- */
+SCENES.noah = {
+  cam: { pos: [ZN.x - 4, 10, ZN.z + 26], look: [ZN.x + 1, 5, ZN.z - 4] },
+  objs: () => [props.ark, ...props.arkAnimals, ...props.rainbow, npcMesh('noah')],
+  setup() { props.arkAnimals.forEach(an => { an.userData.start = an.position.clone(); }); return {}; },
+  steps: [
+    { dur: 6, anim(k) { limbsOf(npcMesh('noah')).armR.rotation.x = -1.2 + Math.sin(k * Math.PI * 8) * 0.5; } },
+    { dur: 8, anim(k) {
+        const tx = ZN.x - 11.5, tz = ZN.z + 0.2;
+        props.arkAnimals.forEach((an, i) => {
+          const ki = ease(Math.max(0, Math.min(1, k * 1.6 - i * 0.08)));
+          const s = an.userData.start;
+          an.position.set(lerp(s.x, tx, ki), ki > 0.75 ? (ki - 0.75) / 0.25 * 3.4 : 0, lerp(s.z, tz, ki));
+          an.rotation.y = Math.atan2(tx - s.x, tz - s.z);
+          an.visible = ki < 1;
+        });
+      } },
+    { dur: 6, anim(k) {
+        props.ark.rotation.z = Math.sin(k * Math.PI * 5) * 0.04;
+        props.ark.position.y = Math.abs(Math.sin(k * Math.PI * 5)) * 0.4;
+      } },
+    { dur: 6, anim(k) {
+        const s = 1 + Math.sin(k * Math.PI) * 0.12;
+        props.rainbow.forEach(arc => arc.scale.setScalar(s));
+      } },
+  ],
+};
+
+/* --- Moses: Crossing the Red Sea --- */
+SCENES.moses = {
+  cam: { pos: [ZR.x, 13, ZR.z + 28], look: [ZR.x, 5, ZR.z - 6] },
+  objs: () => [props.wallL, props.wallR, props.foamL, props.foamR, npcMesh('moses')],
+  steps: [
+    { dur: 6, anim(k) {
+        const e = ease(Math.min(1, k * 1.5));
+        props.wallL.position.x = lerp(ZR.x - 9.5, ZR.x - 5.6, e);
+        props.wallR.position.x = lerp(ZR.x + 9.5, ZR.x + 5.6, e);
+        props.foamL.position.x = props.wallL.position.x;
+        props.foamR.position.x = props.wallR.position.x;
+      } },
+    { dur: 6, anim(k) { limbsOf(npcMesh('moses')).armR.rotation.x = -ease(k) * 2.7; } },
+    { dur: 7, anim(k) {
+        const e = ease(k);
+        props.wallL.position.x = lerp(ZR.x - 5.6, ZR.x - 9.5, e);
+        props.wallR.position.x = lerp(ZR.x + 5.6, ZR.x + 9.5, e);
+        props.foamL.position.x = props.wallL.position.x;
+        props.foamR.position.x = props.wallR.position.x;
+        limbsOf(npcMesh('moses')).armR.rotation.x = -2.7;
+      } },
+  ],
+};
+
+/* --- David & Goliath (shared by both characters, each with their own narration) --- */
+const fightScene = {
+  cam: { pos: [ZD.x + 10, 9, ZD.z + 10], look: [ZD.x - 4, 4, ZD.z - 7] },
+  busy: ['david', 'goliath'],
+  objs: () => [npcMesh('david'), npcMesh('goliath')],
+  setup() {
+    const stone = new THREE.Mesh(new THREE.SphereGeometry(0.28, 8, 6), mat(0x9a9a92));
+    stone.visible = false;
+    scene.add(stone);
+    return { stone };
+  },
+  teardown(tmp) { scene.remove(tmp.stone); },
+  steps: [
+    { dur: 6, anim(k) {
+        const g = npcMesh('goliath'), l = limbsOf(g);
+        l.armL.rotation.x = -1.6; l.armR.rotation.x = -1.6;
+        g.rotation.y = 1.2 + Math.sin(k * Math.PI * 4) * 0.25;
+      } },
+    { dur: 6, anim(k) {
+        const e = ease(k);
+        const d = npcMesh('david'), l = limbsOf(d);
+        d.position.set(lerp(ZD.x + 5, ZD.x - 4.2, e), 0, lerp(ZD.z - 2, ZD.z - 7.6, e));
+        d.rotation.y = -2.12;
+        const swing = Math.sin(k * Math.PI * 14) * (k < 0.97 ? 1 : 0.2);
+        l.legL.rotation.x = swing * 0.9; l.legR.rotation.x = -swing * 0.9;
+        l.armL.rotation.x = -swing * 0.6; l.armR.rotation.x = swing * 0.6;
+      } },
+    { dur: 7, anim(k, tmp) {
+        const d = npcMesh('david'), g = npcMesh('goliath');
+        const dl = limbsOf(d);
+        dl.legL.rotation.x = dl.legR.rotation.x = 0;
+        dl.armR.rotation.x = k < 0.35 ? -k * 40 : -0.4;
+        if (k >= 0.35 && k < 0.55) {
+          const f = (k - 0.35) / 0.2;
+          tmp.stone.visible = true;
+          tmp.stone.position.set(lerp(d.position.x, g.position.x, f), lerp(2, 7.6, f), lerp(d.position.z, g.position.z, f));
+        } else tmp.stone.visible = false;
+        if (k >= 0.55) g.rotation.x = -ease(Math.min(1, (k - 0.55) / 0.35)) * 1.5;
+      } },
+  ],
+};
+SCENES.david = fightScene;
+SCENES.goliath = fightScene;
+
+/* --- Elijah: Fire from Heaven --- */
+SCENES.elijah = {
+  cam: { pos: [ZC.x, 9, ZC.z + 22], look: [ZC.x, 4, ZC.z + 2] },
+  gateFlames: true,
+  objs: () => [npcMesh('elijah'), props.trench, ...flames],
+  setup() { flames.forEach(f => { f.visible = false; }); return {}; },
+  steps: [
+    { dur: 7, anim(k) { limbsOf(npcMesh('elijah')).armR.rotation.x = Math.sin(k * Math.PI * 6) * 0.4; } },
+    { dur: 6, anim(k) {
+        props.trench.scale.setScalar(1 + Math.sin(k * Math.PI * 3) * 0.15);
+        const l = limbsOf(npcMesh('elijah'));
+        l.armL.rotation.x = -ease(k) * 2.8; l.armR.rotation.x = -ease(k) * 2.8;
+      } },
+    { dur: 7, anim(k) {
+        flames.forEach(f => {
+          f.visible = true;
+          const grow = k < 0.4 ? ease(k / 0.4) * 2.6 : 2.6 - ease((k - 0.4) / 0.6) * 1.6;
+          f.scale.setScalar(Math.max(0.001, grow));
+        });
+        if (k > 0.5) props.trench.scale.setScalar(Math.max(0.001, 1 - ease((k - 0.5) / 0.5)));
+      } },
+  ],
+};
+
+/* --- Daniel: In the Lions' Den --- */
+SCENES.daniel = {
+  cam: { pos: [ZA.x + 2, 9, ZA.z + 22], look: [ZA.x, 3, ZA.z + 2] },
+  objs: () => [npcMesh('daniel'), props.denStone, props.angel, ...props.lions],
+  freeze: () => [props.angel],
+  setup() { props.lions.forEach(l => { l.userData.start = l.position.clone(); }); return {}; },
+  steps: [
+    { dur: 6, anim(k) {
+        const e = ease(Math.min(1, k * 2));
+        const l = limbsOf(npcMesh('daniel'));
+        l.armL.rotation.x = -e * 2.6; l.armR.rotation.x = -e * 2.6;
+      } },
+    { dur: 7, anim(k) {
+        const e = ease(k);
+        props.denStone.position.set(lerp(ZA.x + 6.5, ZA.x + 0.5, e), 1.2, lerp(ZA.z - 1, ZA.z - 0.6, e));
+        const targets = [[ZA.x - 1.5, ZA.z + 4.2], [ZA.x + 3.6, ZA.z + 5], [ZA.x + 1, ZA.z + 8.4]];
+        props.lions.forEach((li, i) => {
+          const s = li.userData.start;
+          li.position.set(lerp(s.x, targets[i][0], e), 0, lerp(s.z, targets[i][1], e));
+          li.rotation.y = Math.atan2(targets[i][0] - s.x, targets[i][1] - s.z);
+        });
+      } },
+    { dur: 8, anim(k) {
+        props.angel.position.y = lerp(13, 2.2, ease(Math.min(1, k * 1.6)));
+        if (k > 0.5) {
+          const f = ease((k - 0.5) / 0.5);
+          props.lions.forEach(li => { li.scale.y = 1 - f * 0.45; });
+        }
+      } },
+  ],
+};
+
+/* --- Samuel: Speak, LORD! --- */
+SCENES.samuel = {
+  cam: { pos: [4, 6.5, 24], look: [4, 2.5, 9] },
+  objs: () => [npcMesh('samuel')],
+  setup() {
+    const glow = new THREE.Mesh(new THREE.SphereGeometry(0.9, 14, 10),
+      new THREE.MeshBasicMaterial({ color: 0xfff3b0, transparent: true, opacity: 0 }));
+    glow.position.set(4, 6.5, 8.5);
+    scene.add(glow);
+    return { glow };
+  },
+  teardown(tmp) { scene.remove(tmp.glow); },
+  steps: [
+    { dur: 6, anim(k, tmp) {
+        npcMesh('samuel').rotation.x = -Math.PI / 2 * ease(Math.min(1, k * 1.6));
+        tmp.glow.material.opacity = Math.max(0, Math.sin(k * Math.PI * 3)) * 0.8;
+      } },
+    { dur: 6, anim(k, tmp) {
+        const s = npcMesh('samuel'), l = limbsOf(s);
+        s.rotation.x = -Math.PI / 2 * (1 - ease(Math.min(1, k * 3)));
+        s.position.x = 4 + Math.sin(k * Math.PI * 3) * 2.4;
+        const swing = Math.sin(k * Math.PI * 16) * 0.8 * (k < 0.95 ? 1 : 0.2);
+        l.legL.rotation.x = swing; l.legR.rotation.x = -swing;
+      } },
+    { dur: 7, anim(k, tmp) {
+        const l = limbsOf(npcMesh('samuel'));
+        l.legL.rotation.x = l.legR.rotation.x = 0;
+        l.armL.rotation.x = -ease(k) * 2.4; l.armR.rotation.x = -ease(k) * 2.4;
+        tmp.glow.material.opacity = 0.5 + Math.sin(k * Math.PI) * 0.4;
+        tmp.glow.position.y = 6.5 - ease(k) * 1.5;
+      } },
+  ],
+};
 
 // exposed for testing
 window.__openDialog = key => { const n = npcs.find(n => n.key === key); if (n) openDialog(n); };
-window.__debug = () => ({ player: player.position.toArray().map(v => +v.toFixed(1)), heading: +heading.toFixed(2), pitch: +pitch.toFixed(2), keys: { ...keys }, dialogOpen, near: nearNPC && nearNPC.key });
+window.__playScene = playScene;
+window.__endScene = endScene;
+window.__debug = () => ({ player: player.position.toArray().map(v => +v.toFixed(1)), heading: +heading.toFixed(2), pitch: +pitch.toFixed(2), keys: { ...keys }, dialogOpen, sceneActive, sceneStep: scenePlay && scenePlay.idx, near: nearNPC && nearNPC.key });
 
 /* ================================================================
    START + LOOP
@@ -1019,7 +1402,7 @@ function animate() {
 
   // turn with left/right, walk with up/down
   let moveDir = 0;
-  if (!dialogOpen) {
+  if (!dialogOpen && !sceneActive) {
     if (keys.left) heading += TURN_SPEED * dt;
     if (keys.right) heading -= TURN_SPEED * dt;
     if (keys.up) moveDir = 1;
@@ -1048,12 +1431,25 @@ function animate() {
     player.position.y = 0;
   }
 
-  // camera follows behind the player's shoulder; pitch tilts the view up/down
-  const face = new THREE.Vector3(Math.sin(heading), 0, Math.cos(heading));
-  const camGoal = player.position.clone().addScaledVector(face, -13);
-  camGoal.y = Math.max(1.7, 9.5 - pitch * 7.5);
-  camera.position.lerp(camGoal, 0.08);
-  camera.lookAt(player.position.x + face.x * 5, 2.8 + Math.sin(pitch) * 26, player.position.z + face.z * 5);
+  // scene player: run the current step's animation and point the camera at the stage
+  if (sceneActive) {
+    const sp = scenePlay;
+    sp.stepT += dt;
+    const step = sp.def.steps[sp.idx];
+    const k = Math.min(1, sp.stepT / step.dur);
+    if (step.anim) step.anim(k, sp.tmp, t);
+    const cam = step.cam || sp.def.cam;
+    camera.position.lerp(sceneCamV.set(cam.pos[0], cam.pos[1], cam.pos[2]), 0.05);
+    camera.lookAt(cam.look[0], cam.look[1], cam.look[2]);
+    if (k >= 1 && sp.audioDone) advanceScene();
+  } else {
+    // camera follows behind the player's shoulder; pitch tilts the view up/down
+    const face = new THREE.Vector3(Math.sin(heading), 0, Math.cos(heading));
+    const camGoal = player.position.clone().addScaledVector(face, -13);
+    camGoal.y = Math.max(1.7, 9.5 - pitch * 7.5);
+    camera.position.lerp(camGoal, 0.08);
+    camera.lookAt(player.position.x + face.x * 5, 2.8 + Math.sin(pitch) * 26, player.position.z + face.z * 5);
+  }
 
   // proximity check
   nearNPC = null;
@@ -1062,7 +1458,7 @@ function animate() {
     const d2 = (player.position.x - n.x) ** 2 + (player.position.z - n.z) ** 2;
     if (d2 < best) { best = d2; nearNPC = n; }
   }
-  if (nearNPC && !dialogOpen) {
+  if (nearNPC && !dialogOpen && !sceneActive) {
     promptEl.innerHTML = `\u{1F4AC} Talk to <b>${nearNPC.data.name}</b>!<span class="hint">${isTouch ? 'tap here or the \u{1F4AC} button' : 'press E or click here'}</span>`;
     promptEl.style.display = 'block';
     document.getElementById('talkBtn').style.display = isTouch ? 'block' : 'none';
@@ -1071,10 +1467,14 @@ function animate() {
     document.getElementById('talkBtn').style.display = 'none';
   }
 
-  // idle bobbing
-  for (const b of bobbers) b.obj.position.y = b.base + Math.sin(t * b.speed) * b.amp;
-  // NPCs gently sway their arms
+  // idle bobbing (paused for anything a scene is currently moving)
+  for (const b of bobbers) {
+    if (sceneActive && scenePlay.frozen.has(b.obj)) continue;
+    b.obj.position.y = b.base + Math.sin(t * b.speed) * b.amp;
+  }
+  // NPCs gently sway their arms (unless they are busy acting in a scene)
   for (const n of npcs) {
+    if (sceneActive && scenePlay.busy.has(n.key)) continue;
     const l = n.mesh.userData.limbs;
     const sway = Math.sin(t * 1.6 + n.x) * 0.08;
     l.armL.rotation.x = sway;
@@ -1094,10 +1494,12 @@ function animate() {
     bd.wings[0].rotation.x = flap;
     bd.wings[1].rotation.x = -flap;
   }
-  // flames flicker
-  for (const f of flames) {
-    f.scale.y = 1 + Math.sin(t * 9 + f.position.x * 3) * 0.25;
-    f.scale.x = f.scale.z = 1 + Math.cos(t * 7 + f.position.z * 2) * 0.15;
+  // flames flicker (Elijah's scene controls the fire itself)
+  if (!(sceneActive && scenePlay.def.gateFlames)) {
+    for (const f of flames) {
+      f.scale.y = 1 + Math.sin(t * 9 + f.position.x * 3) * 0.25;
+      f.scale.x = f.scale.z = 1 + Math.cos(t * 7 + f.position.z * 2) * 0.15;
+    }
   }
   // fountain shimmer
   fWater.position.y = 0.75 + Math.sin(t * 2) * 0.05;

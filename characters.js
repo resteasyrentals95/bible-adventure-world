@@ -6,6 +6,14 @@ const CHARACTERS = {
     name: 'Adam', emoji: '\u{1F33F}', sub: 'The very first man',
     voice: { gender: 'male', idx: 0, pitch: 0.85, rate: 0.95 },
     greeting: "Hello, friend! Welcome to the Garden of Eden — the very first home God ever made for people. I was the first man God created! What would you like to ask me?",
+    scene: {
+      title: 'Naming the Animals',
+      lines: [
+        "In the beginning, God made the heavens, the earth, and a beautiful garden called Eden.",
+        "God formed Adam from the dust of the ground and breathed life into him — the very first man!",
+        "Then God brought the animals to Adam, and one by one, Adam gave every single one its name!",
+      ],
+    },
     questions: [
       { q: 'When did you live?', a: "I lived at the very beginning of history! God made me on the sixth day of creation. He formed me from the dust of the ground and breathed the breath of life into me — and I became a living person. I was the very first human being who ever lived!", v: 'Genesis 1:26–31; Genesis 2:7' },
       { q: 'Where did you live?', a: "God planted a beautiful garden called Eden and put me there to live. The Bible says a river flowed out of Eden and split into four rivers — the Pishon, the Gihon, the Tigris, and the Euphrates. Guess what? The Tigris and Euphrates rivers still flow through the Middle East today!", v: 'Genesis 2:8–14' },
@@ -20,6 +28,14 @@ const CHARACTERS = {
     name: 'Eve', emoji: '\u{1F338}', sub: 'The mother of all living',
     voice: { gender: 'female', idx: 0, pitch: 1.12, rate: 0.98 },
     greeting: "Hello, little one! I'm Eve, the very first woman God ever made. Adam named me Eve because I became the mother of everyone who has ever lived. What do you want to know?",
+    scene: {
+      title: 'The Sneaky Serpent',
+      lines: [
+        "In the middle of the garden stood a special tree — and one day, a sneaky serpent came slithering up to Eve.",
+        "The serpent twisted God's words, and Eve and Adam ate the fruit God had told them not to eat. Sin came into the world that sad day.",
+        "But God made a wonderful promise: one day, from Eve's family, a Rescuer would come to crush the serpent forever. His name is Jesus!",
+      ],
+    },
     questions: [
       { q: 'How were you made?', a: "God made me in a very special way! He caused Adam to fall into a deep sleep, took one of his ribs, and made me from it. When Adam woke up and saw me, he was so happy — he said I was 'bone of my bones and flesh of my flesh.' God made us to be a family, the first family ever!", v: 'Genesis 2:21–23' },
       { q: 'What does your name mean?', a: "My name, Eve, means 'life' or 'living.' Adam gave me that name because I became the mother of all living people. Every person who has ever been born — including you — comes from Adam's and my family!", v: 'Genesis 3:20' },
@@ -33,6 +49,15 @@ const CHARACTERS = {
     name: 'Noah', emoji: '\u{1F6A2}', sub: 'Builder of the Ark',
     voice: { gender: 'male', idx: 1, pitch: 0.7, rate: 0.88 },
     greeting: "Ahoy there, young sailor! I'm Noah. God asked me to build a giant boat — the Ark — to save my family and the animals from a great flood. Climb aboard with your questions!",
+    scene: {
+      title: 'All Aboard the Ark!',
+      lines: [
+        "God told Noah to build a giant ark, because a great flood was coming — and Noah obeyed, building it exactly as God said.",
+        "Then the animals came, two by two, and marched right up the ramp into the ark. God Himself shut the door!",
+        "It rained for forty days and forty nights — but everyone inside the ark was completely safe.",
+        "When the flood was over, God painted a rainbow across the sky — His forever promise that He would never flood the whole earth again!",
+      ],
+    },
     questions: [
       { q: 'When did you live?', a: "I lived many generations after Adam — the Bible lists my whole family line from Adam in Genesis chapter 5! I was 600 years old when the floodwaters came, and I lived to be 950 years old. People lived a very long time back then!", v: 'Genesis 5; Genesis 7:6; Genesis 9:29' },
       { q: 'Why did God send the flood?', a: "In my day, the world had become very, very wicked — the Bible says every thought of people's hearts was evil all the time, and it broke God's heart. But it also says 'Noah found grace in the eyes of the LORD.' God saved my family because of His grace, and He gave people time to turn back to Him while I built the ark.", v: 'Genesis 6:5–8; 2 Peter 2:5' },
@@ -47,6 +72,14 @@ const CHARACTERS = {
     name: 'Moses', emoji: '\u{1F30A}', sub: 'Leader of the Exodus',
     voice: { gender: 'male', idx: 2, pitch: 0.78, rate: 0.92 },
     greeting: "Greetings, young traveler! I'm Moses. God used me to lead His people Israel out of slavery in Egypt — right through the middle of the Red Sea! What would you like to ask?",
+    scene: {
+      title: 'Crossing the Red Sea',
+      lines: [
+        "God's people were trapped at the Red Sea, and Pharaoh's army was thundering up behind them!",
+        "Then Moses stretched out his staff over the water — and God split the sea right down the middle!",
+        "Israel walked through on dry ground, with towering walls of water on both sides. God saved His people — nothing is too hard for Him!",
+      ],
+    },
     questions: [
       { q: 'When did you live?', a: "I lived about 3,500 years ago! Based on the Bible's own timeline in 1 Kings 6:1, many Bible scholars believe I led Israel out of Egypt around 1446 BC. I lived 120 years: 40 years as a prince in Egypt, 40 years as a shepherd in Midian, and 40 years leading Israel through the wilderness!", v: '1 Kings 6:1; Deuteronomy 34:7; Acts 7:23, 30, 36' },
       { q: 'Tell me about the basket!', a: "When I was a baby, the king of Egypt ordered that Hebrew baby boys be thrown in the river. But my brave mother made a little basket-boat, coated it with tar so it would float, and hid me among the reeds of the Nile River. The princess of Egypt found me and raised me in the palace — God protected me from the very start!", v: 'Exodus 2:1–10' },
@@ -61,6 +94,14 @@ const CHARACTERS = {
     name: 'David', emoji: '\u{1FA83}', sub: 'Shepherd, giant-slayer, king',
     voice: { gender: 'male', idx: 3, pitch: 1.2, rate: 1.06 },
     greeting: "Hi there, brave friend! I'm David. I was a shepherd boy from Bethlehem who fought the giant Goliath — and later became king of Israel! See that big fellow across the valley? Ask me about him!",
+    scene: {
+      title: 'David & Goliath',
+      lines: [
+        "For forty days, the giant Goliath stomped out and dared anyone to fight him. All of Israel's soldiers were afraid!",
+        "But young David ran toward the giant with just a sling and a smooth stone, shouting, 'I come against you in the name of the LORD of hosts!'",
+        "David slung the stone — WHOOSH — and the giant came crashing down! The battle belongs to the LORD!",
+      ],
+    },
     questions: [
       { q: 'When did you live?', a: "I lived about 3,000 years ago! I became king around 1010 BC and reigned for 40 years. And here's something amazing: archaeologists digging in Israel found an ancient stone called the Tel Dan Stele that mentions the 'House of David' — my royal family — carved in stone from long, long ago!", v: '2 Samuel 5:4–5' },
       { q: 'Where did you live?', a: "I grew up in Bethlehem, a little town where I watched my father Jesse's sheep. I fought Goliath in the Valley of Elah — a real valley you can still visit in Israel today! Later I became king and made Jerusalem my capital city. They still call part of it the 'City of David'!", v: '1 Samuel 17:2, 12, 15; 2 Samuel 5:6–7, 9' },
@@ -75,6 +116,14 @@ const CHARACTERS = {
     name: 'Elijah', emoji: '\u{1F525}', sub: 'Prophet of fire',
     voice: { gender: 'male', idx: 4, pitch: 0.9, rate: 1.02 },
     greeting: "Welcome to Mount Carmel, young friend! I'm Elijah the prophet. Right here on this mountain, God answered my prayer with FIRE from heaven! What would you like to know?",
+    scene: {
+      title: 'Fire from Heaven',
+      lines: [
+        "On Mount Carmel, Elijah stood all alone against 450 prophets of the false god Baal. They shouted to Baal all day long — but nothing happened.",
+        "Then Elijah soaked his altar with water three whole times, and prayed one simple prayer to the living God.",
+        "WHOOSH! Fire fell from heaven and burned up the sacrifice, the stones, and even all the water! And the people shouted: 'The LORD — He is God!'",
+      ],
+    },
     questions: [
       { q: 'When did you live?', a: "I lived about 2,900 years ago, around 870–850 BC, in the days when wicked King Ahab and Queen Jezebel ruled the northern kingdom of Israel. They led the people to worship a fake god named Baal, so God sent me to call everyone back to Him.", v: '1 Kings 16:29–33; 1 Kings 17:1' },
       { q: 'Where were you from?', a: "I came from a town called Tishbe in the land of Gilead, east of the Jordan River — that's why people called me 'Elijah the Tishbite.' And this mountain we're standing on, Mount Carmel, is a real mountain in Israel that you can climb today!", v: '1 Kings 17:1; 1 Kings 18:19–20' },
@@ -89,6 +138,14 @@ const CHARACTERS = {
     name: 'Daniel', emoji: '\u{1F981}', sub: 'Faithful in the lions’ den',
     voice: { gender: 'male', idx: 5, pitch: 0.98, rate: 0.96 },
     greeting: "Hello there, brave explorer! I'm Daniel. I spent a whole night in a den of hungry lions — and God shut their mouths! Don't worry, these lions are friendly now. What would you like to ask?",
+    scene: {
+      title: "In the Lions' Den",
+      lines: [
+        "Daniel prayed to God three times every day — even when the king's law said he couldn't.",
+        "So Daniel was thrown into a den of hungry lions, and a great stone sealed the door!",
+        "But God sent His angel to shut the lions' mouths. In the morning, Daniel walked out without a single scratch — and the king told the whole kingdom to honor Daniel's God!",
+      ],
+    },
     questions: [
       { q: 'When did you live?', a: "I lived about 2,600 years ago. Around 605 BC, when I was just a young man, King Nebuchadnezzar of Babylon captured Jerusalem and took me far from home. I served in the palace of Babylon for over 60 years, under several kings — and I stayed faithful to God the whole time!", v: 'Daniel 1:1–6, 21' },
       { q: 'Where was Babylon?', a: "Babylon was one of the most amazing cities of the ancient world, in the land we now call Iraq. It had giant walls, golden statues, and beautiful gardens. Archaeologists have dug up its ruins and even found the great Ishtar Gate covered in blue tiles with lions on it!", v: 'Daniel 1:1; Daniel 4:29–30' },
@@ -98,10 +155,39 @@ const CHARACTERS = {
       { q: 'What did you learn about God?', a: "I learned that God rules over every king and kingdom — He 'changes times and seasons; He removes kings and sets up kings.' Babylon seemed unbeatable, but God was always in charge. So keep praying and stay faithful, even when it's hard — the God who shut the lions' mouths watches over you too!", v: 'Daniel 2:20–22; Daniel 6:26–27' },
     ],
   },
+  goliath: {
+    name: 'Goliath', emoji: '\u{1F6E1}\u{FE0F}', sub: 'The giant of Gath',
+    voice: { gender: 'male', idx: 7, pitch: 0.6, rate: 0.85 },
+    greeting: "HO HO HO! Well, well — a little visitor! I am GOLIATH of Gath, champion of the Philistines, over nine feet tall! I learned a very big lesson the hard way. Go on, little one — ask me anything!",
+    scene: {
+      title: "The Giant's Big Lesson",
+      lines: [
+        "Every morning I marched out and roared: 'Choose a man and let him come fight me!' And all of Israel trembled.",
+        "Then came a shepherd boy — no sword, no armor — telling me he came in the name of the LORD of hosts. I laughed at him. Big mistake!",
+        "One little stone from his sling — and down I crashed! Remember, little friend: never make fun of the living God.",
+      ],
+    },
+    questions: [
+      { q: 'How tall were you REALLY?', a: "The Bible says I was six cubits and a span — that's over NINE FEET tall! My bronze armor weighed about 125 pounds, I had bronze armor on my legs, a bronze javelin on my back, and my spear was as thick as a weaver's beam. Just the iron point of my spear weighed about 15 pounds. I even had my own shield-carrier walking in front of me!", v: '1 Samuel 17:4–7' },
+      { q: 'Who were the Philistines?', a: "My people! We lived in five great cities near the sea — Gath, Ashdod, Ashkelon, Ekron, and Gaza. My hometown was Gath. We Philistines battled Israel for many years. Archaeologists have actually dug up the ruins of Gath in Israel — my city was real, and you can visit it today!", v: '1 Samuel 6:17; 1 Samuel 17:4' },
+      { q: 'Why did you challenge Israel?', a: "In those days, instead of two whole armies fighting, each side could send one champion — and I was the biggest champion anyone had ever seen! Every morning and every evening, for FORTY days, I stomped out and roared: 'Choose a man and let him come fight me!' King Saul and all Israel were terrified. Nobody would come... until that shepherd boy showed up.", v: '1 Samuel 17:8–11, 16' },
+      { q: 'What happened when you fought David?', a: "Ohhh, I laughed when I saw him — just a boy, with no sword and no armor, carrying a stick and a sling! I made fun of him and of his God. Big mistake. He shouted, 'You come against me with sword and spear, but I come against you in the name of the LORD of hosts!' Then he slung ONE smooth stone... it sank into my forehead, and down I crashed. The whole battle was over, just like that.", v: '1 Samuel 17:41–50' },
+      { q: 'Were there other giants?', a: "Yes indeed! Gath was famous for us big fellows. The Bible tells about my relatives — more giant warriors from Gath who fought Israel later, including one with six fingers on each hand and six toes on each foot! But David and his mighty men defeated every one of them too.", v: '2 Samuel 21:15–22' },
+      { q: 'What should I learn from you?', a: "Listen closely, little one — this is important. I trusted my size, my armor, and my big loud voice, and I made fun of the living God. The Bible says 'Pride goes before destruction.' No one is too big for God to stop — and no one is too small for God to use! Don't be like me. Be like David: trust the LORD, not your own strength.", v: 'Proverbs 16:18; 1 Samuel 17:45–47' },
+    ],
+  },
   samuel: {
     name: 'Samuel', emoji: '\u{1F4EF}', sub: 'The boy who heard God',
     voice: { gender: 'male', idx: 6, pitch: 1.35, rate: 1.05 },
     greeting: "Hello, young friend! I'm Samuel. When I was a boy about your age, God called my name in the night — and I became His prophet! I even anointed David as king. What would you like to ask me?",
+    scene: {
+      title: 'Speak, LORD!',
+      lines: [
+        "One night, while the boy Samuel was lying down in God's house, a voice called his name: 'Samuel! Samuel!'",
+        "Three times he ran to old Eli the priest, saying 'Here I am!' — but it wasn't Eli. It was GOD calling him!",
+        "So Samuel answered, 'Speak, LORD, for your servant hears.' And God made him a great prophet. God can speak to kids too — so keep your ears open!",
+      ],
+    },
     questions: [
       { q: 'When did you live?', a: "I lived a little over 3,000 years ago, in the days before Israel had kings. I was Israel's last judge and one of its first great prophets — God used me to anoint Israel's first two kings, Saul and David!", v: '1 Samuel 7:15; Acts 13:20' },
       { q: 'How did God call you?', a: "When I was a boy serving in God's house at Shiloh, one night I heard a voice call, 'Samuel!' I ran to old Eli the priest — but he hadn't called me. It happened three times! Then Eli understood it was GOD calling. He told me to answer, 'Speak, LORD, for your servant hears.' And God spoke to me! God can speak to children — He did to me!", v: '1 Samuel 3:1–10' },

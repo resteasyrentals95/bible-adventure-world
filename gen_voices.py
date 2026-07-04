@@ -26,7 +26,11 @@ CAST = {
     "elijah": {"voice": "en-IE-ConnorNeural",      "rate": "+4%",  "pitch": "-4Hz"},   # fiery Irish storyteller
     "daniel": {"voice": "en-ZA-LukeNeural",        "rate": "-2%",  "pitch": "+0Hz"},   # calm and steady
     "samuel": {"voice": "en-GB-MaisieNeural",      "rate": "+4%",  "pitch": "+0Hz"},   # real child voice
+    "goliath": {"voice": "en-AU-WilliamNeural",    "rate": "-12%", "pitch": "-30Hz"},  # booming giant
 }
+
+# Warm storyteller voice for the acted-out scene narrations
+NARRATOR = {"voice": "en-US-GuyNeural", "rate": "-8%", "pitch": "-2Hz"}
 
 
 def load_characters():
@@ -54,18 +58,22 @@ async def main():
     chars = load_characters()
     jobs = []
     for key, data in chars.items():
-        jobs.append((key, "g", data["greeting"]))
+        jobs.append((key, "g", data["greeting"], CAST[key]))
         for i, item in enumerate(data["questions"]):
-            jobs.append((key, str(i), item["a"]))
+            jobs.append((key, str(i), item["a"], CAST[key]))
+        # scene narrations (Goliath narrates his own scene in character)
+        narrator = CAST[key] if key == "goliath" else NARRATOR
+        for i, line in enumerate(data.get("scene", {}).get("lines", [])):
+            jobs.append((f"scene_{key}", str(i), line, narrator))
 
     print(f"Recording {len(jobs)} lines of dialogue...")
     failed = []
-    for key, tag, text in jobs:
+    for key, tag, text, cast in jobs:
         path = OUT / f"{key}_{tag}.mp3"
         if path.exists() and path.stat().st_size > 1000:
             print(f"  skip {path.name} (already recorded)")
             continue
-        ok = await render(text, path, CAST[key])
+        ok = await render(text, path, cast)
         print(f"  {'ok  ' if ok else 'FAIL'} {path.name}")
         if not ok:
             failed.append(path.name)
